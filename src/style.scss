@@ -1,0 +1,32 @@
+html, body, #app, #diagram, #graph {
+  height: 100%;
+  margin: 0;
+}
+
+#tools {
+  width: 100px;
+  border: 1px solid;
+}
+
+#diagram {
+  display: flex;
+}
+
+.diamond-node polygon{
+  background: red;
+}
+
+.srd-port {
+  background: royalblue;
+}
+
+.srd-diagram {
+  height: 100%;
+  background: lightgray;
+}
+
+.srd-default-link path {
+  stroke: hotpink;
+}
+
+
