@@ -12,8 +12,16 @@ html, body, #app, #diagram, #graph {
   display: flex;
 }
 
-.diamond-node polygon{
-  background: red;
+.diamond-node {
+  // button {
+  //   border-radius: 50%;
+  //   display: block;
+  //   width: 40px;
+  //   height: 40px;
+  // }
+  polygon{
+   background: red;
+  }
 }
 
 .srd-port {

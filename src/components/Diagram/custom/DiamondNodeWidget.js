@@ -1,6 +1,6 @@
 import * as React from "react";
-import { DiamondNodeModel } from "./DiamondNodeModel";
 import { PortWidget } from "storm-react-diagrams";
+import { truncate } from 'lodash';
 
 import { DiagramContext } from '../index';
 
@@ -9,13 +9,26 @@ import { DiagramContext } from '../index';
  */
 export class DiamonNodeWidget extends React.Component {
 	static defaultProps = {
-		size: 150,
+		size: 120,
 		node: null
 	};
 
 	constructor(props) {
 		super(props);
 		this.state = {};
+	}
+
+	toggleBottomMenu = () => {
+		if (this.state[this.props.node.id]) {
+			this.setState({
+				[this.props.node.id]: !this.state[this.props.node.id],
+			})
+		} else {
+			this.setState({
+				[this.props.node.id]: true,
+			})
+		}
+
 	}
 
 	render() {
@@ -29,12 +42,13 @@ export class DiamonNodeWidget extends React.Component {
 								style={{
 									position: "relative",
 									width: this.props.size,
-									height: 50
+									height: 50,
 								}}
 							>
 								<svg
 									width={this.props.size}
 									height={50}
+									title={this.props.node.id}
 									dangerouslySetInnerHTML={{
 										__html:
 											`
@@ -47,8 +61,8 @@ export class DiamonNodeWidget extends React.Component {
 													stroke-width="4"
 													x="0"
 													y="0"
-													width="150"
-													height="50"
+													width="${this.props.size}"
+													height="${50}"
 												/>
 												<text
 													fill="#000000"
@@ -60,8 +74,12 @@ export class DiamonNodeWidget extends React.Component {
 													font-family="Helvetica, Arial, sans-serif"
 													text-anchor="start"
 													stroke-dasharray="none"
+													title={${this.props.node.id}}
 												>
-													STAGE ${this.props.node.id}
+													Stage ${truncate(this.props.node.id, {
+														'length': 8,
+														'separator': ' '
+													})}
 												</text>
 											</g>
 										`
@@ -71,12 +89,12 @@ export class DiamonNodeWidget extends React.Component {
 									style={{
 										position: "absolute",
 										zIndex: 10,
-										top: 15,
+										top: this.props.size / 2 - 8,
 										left: -8
 									}}
 								>
-									<PortWidget name="left" node={this.props.node} />
-									<button onClick={() => contextData.addNewNode('left', this.props.node)}>+</button>
+									{/* <PortWidget name="left" node={this.props.node} /> */}
+									{/* <button onClick={() => contextData.addNewNode('left', this.props.node)}>+</button> */}
 								</div>
 								<div
 									style={{
@@ -93,23 +111,50 @@ export class DiamonNodeWidget extends React.Component {
 										position: "absolute",
 										zIndex: 10,
 										left: this.props.size - 8,
-										top: 15
+										top: this.props.size / 2 - 8
 									}}
 								>
-									<PortWidget name="right" node={this.props.node} />
-									<button onClick={() => contextData.addNewNode('right', this.props.node)}>+</button>
+									{/* <PortWidget name="right" node={this.props.node} /> */}
+									{/* <button onClick={() => contextData.addNewNode('right', this.props.node)}>+</button> */}
 								</div>
 								<div
 									style={{
 										position: "absolute",
 										zIndex: 10,
 										left: this.props.size / 2 - 8,
-										top: 40
+										top: 42,
 									}}
 								>
 									<PortWidget name="bottom" node={this.props.node} />
-									<button
-										onClick={() => contextData.addNewNode('bottom', this.props.node)}>+</button>
+									{!this.props.node.hasChildren && (
+										<button onClick={() => this.toggleBottomMenu()}>+</button>
+									)}
+									{this.state[this.props.node.id] && (
+										<div style={{
+											display: 'flex',
+											position: 'absolute',
+											right: '-50%',
+											transform: 'translateX(50%)',
+											width: 150,
+										}}>
+											<button
+												onClick={() => {
+													contextData.addNewNode(this.props.node)
+													this.toggleBottomMenu();
+												}}
+											>
+												Add a stage
+											</button>
+											<button
+												onClick={() => {
+													contextData.addFork(this.props.node)
+													this.toggleBottomMenu();
+												}}
+											>
+												Add a fork
+											</button>
+										</div>
+									)}
 								</div>
 							</div>
 						</section>
