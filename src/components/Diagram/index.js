@@ -8,22 +8,17 @@ import {
 } from "storm-react-diagrams";
 
 import uuid from 'uuid/v4';
-import { minBy, toArray, once, find, findLast } from 'lodash';
+import { minBy, toArray, find, findLast } from 'lodash';
 
 // import the custom models
-import { DiamondNodeModel, STAGE_TYPES } from "./custom/DiamondNodeModel";
+import { DiamondNodeModel } from "./custom/DiamondNodeModel";
 import { DiamondNodeFactory } from "./custom/DiamondNodeFactory";
 import { SimplePortFactory } from "./custom/SimplePortFactory";
 import { DiamondPortModel } from "./custom/DiamondPortModel";
 
-export const DiagramContext = React.createContext();
+import { DIRECTIONS, STAGE_TYPES } from '../../constants';
 
-const DIRECTIONS = {
-	TOP: 'top',
-	BOTTOM: 'bottom',
-	LEFT: 'left',
-	RIGHT: 'right',
-};
+export const DiagramContext = React.createContext();
 
 export default class extends React.Component {
 	constructor(props) {
@@ -33,22 +28,23 @@ export default class extends React.Component {
 		this.model = new DiagramModel();
 
 		this.engine.installDefaultFactories();
-		// this.model.setOffsetX(200);
 		// register some other factories as well
 		this.engine.registerPortFactory(new SimplePortFactory("diamond", config => new DiamondPortModel()));
 		this.engine.registerNodeFactory(new DiamondNodeFactory());
 
 		//3-A) create a default node
 		const startNode = new DefaultNodeModel("Start stage", "rgb(0,192,255)");
-		const startPort = startNode.addOutPort("Out");
+		const startPort = startNode.addOutPort(" ");
 		startNode.setPosition(window.innerWidth / 2, 20);
 
 		//3-B) create our new custom node
 		const node2 = new DiamondNodeModel(STAGE_TYPES.STEM);
+		node2.initialNode = true;
+		node2.parentNode = startNode;
 		node2.setPosition(window.innerWidth / 2 - 30, 100);
 
 		const endNode = new DefaultNodeModel("End stage", "red");
-		const endPort = endNode.addInPort("In");
+		const endPort = endNode.addInPort(" ");
 		endNode.setPosition(window.innerWidth / 2, node2.y + 120);
 
 		//3-C) link the 2 nodes together
@@ -66,7 +62,6 @@ export default class extends React.Component {
 		this.endLink = endLink;
 
 		this.engine.setDiagramModel(this.model);
-		// this.model.setLocked(true);
 	}
 
 	seralizeThis = () => {
@@ -74,8 +69,6 @@ export default class extends React.Component {
 	}
 
 	scaleToFit = () => {
-		this.engine.repaintCanvas();
-
 		const extremeLeftNode = minBy(toArray(this.model.nodes), node => node.x);
 		const extremeTopNode = minBy(toArray(this.model.nodes), node => node.y);
 
@@ -86,6 +79,33 @@ export default class extends React.Component {
 		this.model.setZoomLevel(this.model.getZoomLevel() * zoomFactor);
 		this.model.setOffset(0, 0);
 		this.engine.repaintCanvas();
+	}
+
+	addPreviousNode = parentNode => {
+		const fromStem = parentNode.nodeType === STAGE_TYPES.STEM;
+		console.warn(this.model);
+
+		// add node instance
+		const newNode = fromStem ?
+			new DiamondNodeModel(STAGE_TYPES.STEM) :
+			new DiamondNodeModel(STAGE_TYPES .BRANCH);
+
+		// position node
+		newNode.setPosition(parentNode.x + 80, parentNode.y);
+		newNode.parentNode = parentNode;
+		newNode.grandParentNode = parentNode.parentNode;
+
+		// add new node to diagram model and re-render
+		this.model.addNode(newNode);
+
+		toArray(this.model.nodes).forEach(node => {
+			if (node === parentNode || node.y > newNode.y) {
+				node.setPosition(node.x, node.y + 120);
+			}
+		});
+
+		this.engine.repaintCanvas();
+
 	}
 
 	addNewNode = parentNode => {
@@ -106,10 +126,9 @@ export default class extends React.Component {
 			newNode.forkId = parentNode.forkId;
 
 			const forkEnd = find(this.model.nodes, node => node.forkId === parentNode.forkId && node.forkEnd);
-			const lastStem = findLast(this.model.nodes, node => node.nodeType === 'stem');
+			const lastStem = findLast(this.model.nodes, node => node.nodeType === STAGE_TYPES.STEM);
 			forkEnd.setPosition(forkEnd.x, newNode.y + 120);
 			this.endNode.setPosition(window.innerWidth / 2, lastStem.y + 120)
-			console.warn(lastStem);
 		} else {
 			this.endNode.setPosition(window.innerWidth / 2, newNode.y + 120);
 		}
@@ -200,6 +219,7 @@ export default class extends React.Component {
 				parentNode.hasChildren = true;
 				this.engine.repaintCanvas();
 			}, 0);
+			// this.seralizeThis();
 		}
 	}
 
@@ -254,8 +274,9 @@ export default class extends React.Component {
 		return (
 			<DiagramContext.Provider
 				value={{
-					addNewNode: this.addNewNode,
-					addFork: this.addFork
+					addNextNode: this.addNewNode,
+					addPreviousNode: this.addPreviousNode,
+					addFork: this.addFork,
 				}}
 			>
 				{/* <button onClick={() => this.engine.zoomToFit()}>&#128269;</button> */}

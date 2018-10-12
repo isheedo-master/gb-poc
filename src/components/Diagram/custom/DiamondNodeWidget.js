@@ -4,9 +4,8 @@ import { truncate } from 'lodash';
 
 import { DiagramContext } from '../index';
 
-/**
- * @author Dylan Vorster
- */
+import { DIRECTIONS } from '../../../constants';
+
 export class DiamonNodeWidget extends React.Component {
 	static defaultProps = {
 		size: 120,
@@ -18,17 +17,55 @@ export class DiamonNodeWidget extends React.Component {
 		this.state = {};
 	}
 
-	toggleBottomMenu = () => {
-		if (this.state[this.props.node.id]) {
+	toggleNodeMenu = position => {
+		const menuId = `${this.props.node.id}_${position}`;
+		if (this.state[menuId]) {
 			this.setState({
-				[this.props.node.id]: !this.state[this.props.node.id],
+				[menuId]: !this.state[menuId],
 			})
 		} else {
 			this.setState({
-				[this.props.node.id]: true,
+				[menuId]: true,
 			})
 		}
+	}
 
+	renderNodeMenu = (position, contextData) => {
+		return (
+			<React.Fragment>
+				<button onClick={() => this.toggleNodeMenu(position)}>+</button>
+				{this.state[`${this.props.node.id}_${position}`] && (
+					<div style={{
+						display: 'flex',
+						position: 'absolute',
+						right: '-50%',
+						transform: 'translateX(50%)',
+						width: 150,
+					}}>
+						<button
+							onClick={() => {
+								position === DIRECTIONS.TOP ?
+									contextData.addPreviousNode(this.props.node) :
+									contextData.addNextNode(this.props.node)
+								this.toggleNodeMenu(position);
+							}}
+						>
+							Add a stage
+						</button>
+						{/* {this.props.node.nodeType === 'stem' && (
+							<button
+								onClick={() => {
+									contextData.addFork(this.props.node)
+									this.toggleNodeMenu();
+								}}
+							>
+								Add a fork
+							</button>
+						)} */}
+					</div>
+				)}
+			</React.Fragment>
+		);
 	}
 
 	render() {
@@ -105,6 +142,7 @@ export class DiamonNodeWidget extends React.Component {
 									}}
 								>
 									<PortWidget name="top" node={this.props.node} />
+									{this.renderNodeMenu(DIRECTIONS.TOP, contextData)}
 								</div>
 								<div
 									style={{
@@ -126,35 +164,7 @@ export class DiamonNodeWidget extends React.Component {
 									}}
 								>
 									<PortWidget name="bottom" node={this.props.node} />
-									{!this.props.node.hasChildren && (
-										<button onClick={() => this.toggleBottomMenu()}>+</button>
-									)}
-									{this.state[this.props.node.id] && (
-										<div style={{
-											display: 'flex',
-											position: 'absolute',
-											right: '-50%',
-											transform: 'translateX(50%)',
-											width: 150,
-										}}>
-											<button
-												onClick={() => {
-													contextData.addNewNode(this.props.node)
-													this.toggleBottomMenu();
-												}}
-											>
-												Add a stage
-											</button>
-											<button
-												onClick={() => {
-													contextData.addFork(this.props.node)
-													this.toggleBottomMenu();
-												}}
-											>
-												Add a fork
-											</button>
-										</div>
-									)}
+									{this.renderNodeMenu(DIRECTIONS.BOTTOM, contextData)}
 								</div>
 							</div>
 						</section>
